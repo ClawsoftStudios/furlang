@@ -14,10 +14,7 @@ typedef enum _Furlang_Executor_Flag_Bits {
 } _Furlang_Executor_Flag_Bits;
 typedef uint8_t _Furlang_Executor_Flags;
 
-struct _Furlang_Executor {
-  Furlang_Executor next;
-  Furlang_Context context;
-
+typedef struct _Furlang_Executor {
   _Furlang_Executor_Flags flags;
 
   struct {
@@ -25,6 +22,6 @@ struct _Furlang_Executor {
     size_t capacity;
     size_t count;
   } callStack;
-};
+} _Furlang_Executor;
 
 #endif // __FURLANG_EXECUTOR_H_
