@@ -31,6 +31,12 @@
     (da)->count += count;                                                        \
   } while (0)
 
+#define FURLANG_DA_FAST_REMOVE(da, idx)            \
+  do {                                             \
+    assert(idx < (da)->count);                     \
+    (da)->items[idx] = (da)->items[--(da)->count]; \
+  } while (0)
+
 #define FURLANG_DA_POP_BACK(da) (assert((da)->count), (da)->items[--(da)->count])
 
 #define FURLANG_DA_RESIZE(da, newSize)                                         \

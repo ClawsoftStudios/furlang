@@ -18,6 +18,8 @@ void furlang_context_destroy(Furlang_Context context, Furlang_Allocator *allocat
     furlang_executor_destroy(context, *e);
   }
 
+  furlang_arena_free(&context->thingsDataArena);
+
   furlang_allocator_free(allocator, context);
 }
 
@@ -64,4 +66,41 @@ _Furlang_Executor *_furlang_context_get_executor(Furlang_Context context, Furlan
 void _furlang_context_remove_executor(Furlang_Context context, Furlang_Executor id) {
   assert(context);
   FURLANG_DA_APPEND(&context->deadExecutors, id);
+  FURLANG_SPARSE_SET_REMOVE(&context->executors, Furlang_Executor, id);
+}
+
+
+
+Furlang_Thing _furlang_context_append_thing(Furlang_Context context, Furlang_Thing_Type type) {
+  assert(context);
+
+  for (size_t i = 0; i < context->deadThings.count; ++i) {
+    _Furlang_Dead_Thing t = context->deadThings.items[i];
+    if (t.type != type) continue;
+    FURLANG_SPARSE_SET_PUT(&context->things, Furlang_Thing, t.id, ((_Furlang_Thing){ .type = type, .data = t.data }));
+
+    return t.id;
+  }
+
+  // New thing
+  char *data = furlang_arena_alloc(&context->thingsDataArena, _furlang_thing_type_size_map[type]);
+  assert(data);
+
+  Furlang_Thing thing = FURLANG_SPARSE_SET_SIZE(&context->things);
+  FURLANG_SPARSE_SET_PUT(&context->things, Furlang_Thing, thing, ((_Furlang_Thing){ .type = type, .data = data }));
+  return thing;
+}
+
+_Furlang_Thing *_furlang_context_get_thing(Furlang_Context context, Furlang_Thing id) {
+  assert(context);
+
+  return FURLANG_SPARSE_SET_GET(&context->things, Furlang_Thing, id);
+}
+
+void _furlang_context_remove_thing(Furlang_Context context, Furlang_Thing id) {
+  assert(context);
+
+  _Furlang_Thing *thing = FURLANG_SPARSE_SET_GET(&context->things, Furlang_Thing, id);
+  FURLANG_DA_APPEND(&context->deadThings, ((_Furlang_Dead_Thing){ .type = thing->type, .id = id, .data = thing->data }));
+  FURLANG_SPARSE_SET_REMOVE(&context->things, Furlang_Thing, id);
 }

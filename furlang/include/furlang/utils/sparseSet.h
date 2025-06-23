@@ -65,11 +65,8 @@
     FURLANG_SPARSE_SET_SET_DENSE_INDEX(set, (set)->denseToSparse.items[(set)->denseToSparse.count-1], idx); \
     FURLANG_SPARSE_SET_SET_DENSE_INDEX(set, id, (sparseType)-1);                                            \
                                                                                                             \
-    (set)->dense.items[idx] = (set)->dense.items[(set)->dense.count-1];                                     \
-    (set)->denseToSparse.items[idx] = (set)->denseToSparse.items[(set)->denseToSparse.count-1];             \
-                                                                                                            \
-    FURLANG_DA_POP_BACK(&(set)->dense);                                                                     \
-    FURLANG_DA_POP_BACK(&(set)->denseToSparse);                                                             \
+    (set)->dense.items[idx] = (set)->dense.items[--(set)->dense.count];                                     \
+    (set)->denseToSparse.items[idx] = (set)->denseToSparse.items[--(set)->denseToSparse.count];             \
   } while (0)
 
 #define FURLANG_SPARSE_SET_GET(set, sparseType, id) (assert(FURLANG_SPARSE_SET_GET_DENSE_INDEX(set, sparseType, id) != (sparseType)-1), \
