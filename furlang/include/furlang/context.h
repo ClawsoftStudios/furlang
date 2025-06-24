@@ -8,7 +8,7 @@
 
 typedef struct _Furlang_Context *Furlang_Context;
 
-Furlang_Context furlang_context_create(Furlang_Allocator *allocator);
+Furlang_Context furlang_context_create(const char *bytecode, size_t bytecodeLength, Furlang_Allocator *allocator);
 void furlang_context_destroy(Furlang_Context context, Furlang_Allocator *allocator);
 
 bool furlang_context_is_running(Furlang_Context context);

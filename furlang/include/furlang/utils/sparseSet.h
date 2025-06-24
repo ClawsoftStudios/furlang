@@ -22,7 +22,7 @@
     } denseToSparse; \
   } name
 
-#define FURLANG_SPARSE_SET_PAGE_SIZE(set) sizeof(*(set)->sparse.items)/sizeof(**(set)->sparse.items)
+#define FURLANG_SPARSE_SET_PAGE_SIZE(set) (sizeof(*(set)->sparse.items)/sizeof(**(set)->sparse.items))
 
 #define FURLANG_SPARSE_SET_SET_DENSE_INDEX(set, id, idx)                                                  \
   do {                                                                                                    \
@@ -69,12 +69,22 @@
     (set)->denseToSparse.items[idx] = (set)->denseToSparse.items[--(set)->denseToSparse.count];             \
   } while (0)
 
-#define FURLANG_SPARSE_SET_GET(set, sparseType, id) (assert(FURLANG_SPARSE_SET_GET_DENSE_INDEX(set, sparseType, id) != (sparseType)-1), \
-  &(set)->dense.items[FURLANG_SPARSE_SET_GET_DENSE_INDEX(set, sparseType, id)])
+#define FURLANG_SPARSE_SET_GET(set, sparseType, id, out)                                 \
+  do {                                                                                   \
+    assert(FURLANG_SPARSE_SET_GET_DENSE_INDEX(set, sparseType, id) != ((sparseType)-1)); \
+    out = &(set)->dense.items[FURLANG_SPARSE_SET_GET_DENSE_INDEX(set, sparseType, id)];  \
+  } while (0)
 
 #define FURLANG_SPARSE_SET_FOREACH(set, sparseType, it) \
   for (sparseType *it = (set)->denseToSparse.items; it != &(set)->denseToSparse.items[(set)->denseToSparse.count]; ++it)
 
 #define FURLANG_SPARSE_SET_SIZE(set) (set)->denseToSparse.count
+
+#define FURLANG_SPARSE_SET_FREE(set)        \
+  do {                                      \
+    FURLANG_DA_FREE(&(set)->sparse);        \
+    FURLANG_DA_FREE(&(set)->dense);         \
+    FURLANG_DA_FREE(&(set)->denseToSparse); \
+  } while (0)
 
 #endif // _FURLANG_UTILS_SPARSE_SET_H_

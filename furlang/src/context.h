@@ -40,7 +40,7 @@ struct _Furlang_Context {
   Furlang_Arena thingsDataArena; // Arena for things' data
 };
 
-Furlang_Executor _furlang_context_append_executor(Furlang_Context context);
+Furlang_Executor _furlang_context_append_executor(Furlang_Context context, Furlang_Position position);
 _Furlang_Executor *_furlang_context_get_executor(Furlang_Context context, Furlang_Executor id);
 void _furlang_context_remove_executor(Furlang_Context context, Furlang_Executor id);
 
