@@ -20,8 +20,9 @@ typedef struct _Furlang_Dead_Thing {
 } _Furlang_Dead_Thing;
 
 struct _Furlang_Context {
-  const char *bytecode;
+  Fbc_Header fbcHeader;
   size_t bytecodeLength;
+  const char *bytecode;
 
   _Furlang_Executor_Sparse_Set executors;
   struct {

@@ -5,13 +5,20 @@
 #include <string.h>
 #include <assert.h>
 
-Furlang_Context furlang_context_create(const char *bytecode, size_t bytecodeLength, Furlang_Allocator *allocator) {
+Furlang_Context furlang_context_create(Fbc fbc, Furlang_Allocator *allocator) {
+  assert(memcmp(fbc.header.magic, (uint8_t[])FBC_MAGIC, sizeof(fbc.header.magic)) == 0);
+
   Furlang_Context context = furlang_allocator_alloc(allocator, sizeof(*context));
   assert(context);
   memset(context, 0, sizeof(*context));
 
-  context->bytecode = bytecode;
-  context->bytecodeLength = bytecodeLength;
+  context->fbcHeader = fbc.header;
+  context->bytecodeLength = fbc.bytecodeLength;
+  context->bytecode = fbc.bytecode;
+
+  Fbc_Header_Function entryFunc = fbc.header.functions[fbc.header.entryFunction];
+  assert(entryFunc.paramCount == 0);
+  _furlang_context_append_executor(context, (Furlang_Position)entryFunc.address);
 
   return context;
 }
@@ -66,6 +73,8 @@ Furlang_Executor _furlang_context_append_executor(Furlang_Context context, Furla
   FURLANG_DA_APPEND(&e.callStack, ((_Furlang_Call){
     .position = position
   }));
+
+  _furlang_executor_push_scope(&e);
 
   FURLANG_SPARSE_SET_PUT(&context->executors, Furlang_Executor, executor, e);
   return executor;

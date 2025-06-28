@@ -8,10 +8,7 @@
 
 Furlang_Executor furlang_executor_create(Furlang_Context context, Furlang_Position position) {
   assert(context);
-  Furlang_Executor executor = _furlang_context_append_executor(context, position);
-  _Furlang_Executor *e = _furlang_context_get_executor(context, executor);
-  _furlang_executor_push_scope(e);
-  return executor;
+  return _furlang_context_append_executor(context, position);
 }
 
 void furlang_executor_destroy(Furlang_Context context, Furlang_Executor executor) {

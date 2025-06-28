@@ -30,11 +30,23 @@ int main(void) {
 /* 48 */ FURLANG_INSTRUCTION_JMP, FURLANG_BYTECODE_ADDR(12),
 /* 57 */ FURLANG_INSTRUCTION_RET
   };
-  size_t bytecodeLength = sizeof(bytecode)/sizeof(*bytecode);
 
-  Furlang_Context context = furlang_context_create(bytecode, bytecodeLength, NULL);
-
-  Furlang_Executor executor = furlang_executor_create(context, 0);
+  Furlang_Context context = furlang_context_create((Fbc){
+    .header = {
+      .magic = FBC_MAGIC,
+      .version = 0,
+      .entryFunction = 0,
+      .functionCount = 1,
+      .functions = (Fbc_Header_Function[]){
+        (Fbc_Header_Function){
+          .address = 0,
+          .paramCount = 0
+        }
+      }
+    },
+    .bytecodeLength = sizeof(bytecode)/sizeof(*bytecode),
+    .bytecode = bytecode
+  }, NULL);
 
   furlang_context_run(context);
 
