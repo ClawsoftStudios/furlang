@@ -68,8 +68,8 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
     _furlang_executor_push(context, e, furlang_thing_clone(context, thing));
   } break;
   case FURLANG_INSTRUCTION_SWAP: {
-    Furlang_Thing a = _furlang_executor_pop(context, e);
     Furlang_Thing b = _furlang_executor_pop(context, e);
+    Furlang_Thing a = _furlang_executor_pop(context, e);
     _furlang_executor_push(context, e, b);
     _furlang_executor_push(context, e, a);
   } break;
@@ -84,6 +84,21 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
   } break;
   case FURLANG_INSTRUCTION_LOD: {
     _furlang_executor_push(context, e, _furlang_executor_load_variable(e, _furlang_executor_get_ushort(context, e)));
+  } break;
+  case FURLANG_INSTRUCTION_JMP: {
+    Furlang_Addr addr = _furlang_executor_get_addr(context, e);
+    assert(addr < context->bytecodeLength);
+    FURLANG_DA_AT(&e->callStack, e->callStack.count-1).position = addr;
+  } break;
+  case FURLANG_INSTRUCTION_JZ: {
+    Furlang_Addr addr = _furlang_executor_get_addr(context, e);
+    assert(addr < context->bytecodeLength);
+    if (*(Furlang_Int*)_furlang_context_get_thing(context, _furlang_executor_pop(context, e))->data == 0) FURLANG_DA_AT(&e->callStack, e->callStack.count-1).position = addr;
+  } break;
+  case FURLANG_INSTRUCTION_JNZ: {
+    Furlang_Addr addr = _furlang_executor_get_addr(context, e);
+    assert(addr < context->bytecodeLength);
+    if (*(Furlang_Int*)_furlang_context_get_thing(context, _furlang_executor_pop(context, e))->data != 0) FURLANG_DA_AT(&e->callStack, e->callStack.count-1).position = addr;
   } break;
   case FURLANG_INSTRUCTION_ADD: {
     Furlang_Thing a = _furlang_executor_pop(context, e);
@@ -236,6 +251,21 @@ Furlang_Int _furlang_executor_get_int(Furlang_Context context, _Furlang_Executor
   assert(topCall->position+4 <= context->bytecodeLength);
   Furlang_Int value = (context->bytecode[topCall->position+0] << 8*3) | (context->bytecode[topCall->position+1] << 8*2) | (context->bytecode[topCall->position+2] << 8*1) | (context->bytecode[topCall->position+3] << 8*0);
   topCall->position += 4;
+  return value;
+}
+
+Furlang_Addr _furlang_executor_get_addr(Furlang_Context context, _Furlang_Executor *e) {
+  assert(context);
+  assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
+  assert(e->callStack.count);
+
+  _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
+  assert(topCall->position+8 <= context->bytecodeLength);
+  Furlang_Addr value = ((Furlang_Addr)context->bytecode[topCall->position+0] << 8*7) | ((Furlang_Addr)context->bytecode[topCall->position+1] << 8*6)
+                     | ((Furlang_Addr)context->bytecode[topCall->position+2] << 8*5) | ((Furlang_Addr)context->bytecode[topCall->position+3] << 8*4)
+                     | ((Furlang_Addr)context->bytecode[topCall->position+4] << 8*3) | ((Furlang_Addr)context->bytecode[topCall->position+5] << 8*2)
+                     | ((Furlang_Addr)context->bytecode[topCall->position+6] << 8*1) | ((Furlang_Addr)context->bytecode[topCall->position+7] << 8*0);
+  topCall->position += 8;
   return value;
 }
 
