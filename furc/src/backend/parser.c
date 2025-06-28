@@ -153,6 +153,30 @@ Furc_Rvalue *furc_parser_parse_rvalue_primary(Furc_Parser *parser) {
     rvalue->as.incDec.inc = (token.type == FURC_TOKEN_TYPE_INC);
     rvalue->as.incDec.pre = true;
   } break;
+  case FURC_TOKEN_TYPE_PLS:
+  case FURC_TOKEN_TYPE_MIN:
+  case FURC_TOKEN_TYPE_TILDE:
+  case FURC_TOKEN_TYPE_EXCLAMATION: {
+    (void)furc_parser_advance(parser);
+
+    rvalue->type = FURC_RVALUE_UNARY;
+    rvalue->as.unary.value = furc_parser_parse_rvalue_primary(parser);
+
+    switch (token.type) {
+    case FURC_TOKEN_TYPE_PLS: {
+      rvalue->as.unary.type = FURC_UNARY_RVALUE_PLUS;
+    } break;
+    case FURC_TOKEN_TYPE_MIN: {
+      rvalue->as.unary.type = FURC_UNARY_RVALUE_MINUS;
+    } break;
+    case FURC_TOKEN_TYPE_TILDE: {
+      rvalue->as.unary.type = FURC_UNARY_RVALUE_BNOT;
+    } break;
+    case FURC_TOKEN_TYPE_EXCLAMATION: {
+      rvalue->as.unary.type = FURC_UNARY_RVALUE_LNOT;
+    } break;
+    }
+  } break;
   case FURC_TOKEN_TYPE_NUMBER: {
     rvalue->type = FURC_RVALUE_LITERAL;
     rvalue->as.literal = furc_parser_parse_literal(parser);

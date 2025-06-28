@@ -52,6 +52,7 @@ struct Furc_Lvalue {
 typedef enum Furc_Rvalue_Type {
   FURC_RVALUE_LITERAL = 0,
   FURC_RVALUE_LVALUE,
+  FURC_RVALUE_UNARY,
   FURC_RVALUE_BINOP,
   FURC_RVALUE_ASSIGNMENT,
   FURC_RVALUE_INC_DEC,
@@ -65,6 +66,20 @@ typedef struct Furc_Rvalue Furc_Rvalue;
 
 typedef struct Furc_Literal Furc_Literal_Rvalue;
 typedef struct Furc_Lvalue *Furc_Lvalue_Rvalue;
+
+typedef enum Furc_Unary_Rvalue_Type {
+  FURC_UNARY_RVALUE_PLUS = 0,
+  FURC_UNARY_RVALUE_MINUS,
+  FURC_UNARY_RVALUE_BNOT, // Bitwise not (~)
+  FURC_UNARY_RVALUE_LNOT, // Logical not (!)
+
+  COUNT_FURC_UNARY_RVALUE_TYPES
+} Furc_Unary_Rvalue_Type;
+
+typedef struct Furc_Unary_Rvalue {
+  Furc_Unary_Rvalue_Type type;
+  Furc_Rvalue *value;
+} Furc_Unary_Rvalue;
 
 typedef enum Furc_Binop_Rvalue_Type {
   // Arithmetic
@@ -134,6 +149,7 @@ struct Furc_Rvalue {
   union {
     Furc_Literal_Rvalue literal;
     Furc_Lvalue_Rvalue lvalue;
+    Furc_Unary_Rvalue unary;
     Furc_Binop_Rvalue binop;
     Furc_Assignment_Rvalue assignment;
     Furc_Inc_Dec_Rvalue incDec;
