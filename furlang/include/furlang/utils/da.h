@@ -49,7 +49,7 @@
     assert((da)->items);                                                       \
   } while (0)
 
-#define FURLANG_DA_AT(da, idx) assert(idx < (da)->count), (da)->items[idx]
+#define FURLANG_DA_AT(da, idx) (da)->items[assert(idx < (da)->count), idx]
 
 #define FURLANG_DA_FREE(da) free((da)->items)
 

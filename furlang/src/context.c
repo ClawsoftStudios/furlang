@@ -18,7 +18,7 @@ Furlang_Context furlang_context_create(const char *bytecode, size_t bytecodeLeng
 
 void furlang_context_destroy(Furlang_Context context, Furlang_Allocator *allocator) {
   FURLANG_SPARSE_SET_FOREACH(&context->executors, Furlang_Executor, e) {
-    _furlang_executor_cleanup(_furlang_context_get_executor(context, *e));
+    _furlang_executor_cleanup(context, _furlang_context_get_executor(context, *e));
   }
 
   FURLANG_SPARSE_SET_FREE(&context->executors);
@@ -74,9 +74,7 @@ Furlang_Executor _furlang_context_append_executor(Furlang_Context context, Furla
 _Furlang_Executor *_furlang_context_get_executor(Furlang_Context context, Furlang_Executor id) {
   assert(context);
 
-  _Furlang_Executor *e = NULL;
-  FURLANG_SPARSE_SET_GET(&context->executors, Furlang_Executor, id, e);
-  return e;
+  return &FURLANG_SPARSE_SET_GET(&context->executors, Furlang_Executor, id);
 }
 
 void _furlang_context_remove_executor(Furlang_Context context, Furlang_Executor id) {
@@ -110,17 +108,13 @@ Furlang_Thing _furlang_context_append_thing(Furlang_Context context, Furlang_Thi
 _Furlang_Thing *_furlang_context_get_thing(Furlang_Context context, Furlang_Thing id) {
   assert(context);
 
-  _Furlang_Thing *t = NULL;
-  FURLANG_SPARSE_SET_GET(&context->things, Furlang_Thing, id, t);
-  return t;
+  return &FURLANG_SPARSE_SET_GET(&context->things, Furlang_Thing, id);
 }
 
 void _furlang_context_remove_thing(Furlang_Context context, Furlang_Thing id) {
   assert(context);
 
-  _Furlang_Thing *thing = NULL;
-  FURLANG_SPARSE_SET_GET(&context->things, Furlang_Thing, id, thing);
-
+  _Furlang_Thing *thing = &FURLANG_SPARSE_SET_GET(&context->things, Furlang_Thing, id);
   FURLANG_DA_APPEND(&context->deadThings, ((_Furlang_Dead_Thing){ .type = thing->type, .id = id, .data = thing->data }));
   FURLANG_SPARSE_SET_REMOVE(&context->things, Furlang_Thing, id);
 }

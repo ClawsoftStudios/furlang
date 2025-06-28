@@ -11,6 +11,14 @@ typedef struct _Furlang_Call {
   Furlang_Position position;
 } _Furlang_Call;
 
+typedef struct _Furlang_Scope {
+  struct {
+    Furlang_Thing *items;
+    uint16_t capacity;
+    uint16_t count;
+  } variables;
+} _Furlang_Scope;
+
 typedef enum _Furlang_Executor_Flag_Bits {
   _FURLANG_EXECUTOR_FLAG_RUNNING = (1<<0),
   _FURLANG_EXECUTOR_FLAG_PAUSED  = (1<<1),
@@ -19,6 +27,12 @@ typedef uint8_t _Furlang_Executor_Flags;
 
 typedef struct _Furlang_Executor {
   _Furlang_Executor_Flags flags;
+
+  struct {
+    _Furlang_Scope *items;
+    size_t capacity;
+    size_t count;
+  } scopes;
 
   struct {
     _Furlang_Call *items;
@@ -33,14 +47,21 @@ typedef struct _Furlang_Executor {
   } thingStack;
 } _Furlang_Executor;
 
-void _furlang_executor_cleanup(_Furlang_Executor *e);
+void _furlang_executor_cleanup(Furlang_Context context, _Furlang_Executor *e);
 
 Furlang_Instruction _furlang_executor_get_instruction(Furlang_Context context, _Furlang_Executor *e);
 Furlang_Byte _furlang_executor_get_byte(Furlang_Context context, _Furlang_Executor *e);
 Furlang_Int _furlang_executor_get_int(Furlang_Context context, _Furlang_Executor *e);
+uint16_t _furlang_executor_get_ushort(Furlang_Context context, _Furlang_Executor *e);
 
 void _furlang_executor_push(Furlang_Context context, _Furlang_Executor *e, Furlang_Thing thing);
 Furlang_Thing _furlang_executor_pop(Furlang_Context context, _Furlang_Executor *e);
 Furlang_Thing _furlang_executor_peek(_Furlang_Executor *e);
+
+void _furlang_executor_push_scope(_Furlang_Executor *e);
+void _furlang_executor_pop_scope(Furlang_Context context, _Furlang_Executor *e);
+
+void _furlang_executor_store_variable(Furlang_Context context, _Furlang_Executor *e, uint16_t index, Furlang_Thing thing);
+Furlang_Thing _furlang_executor_load_variable(_Furlang_Executor *e, uint16_t index);
 
 #endif // __FURLANG_EXECUTOR_H_

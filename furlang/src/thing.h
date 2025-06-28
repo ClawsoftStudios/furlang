@@ -3,6 +3,8 @@
 
 #include "furlang/thing.h"
 
+#define _FURLANG_DEAD_THING ((Furlang_Thing)-1)
+
 typedef struct _Furlang_Thing {
   Furlang_Thing_Type type;
   size_t referenceCount;
