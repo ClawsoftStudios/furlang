@@ -39,6 +39,13 @@ void furlang_context_destroy(Furlang_Context context, Furlang_Allocator *allocat
   furlang_allocator_free(allocator, context);
 }
 
+void furlang_context_collect(Furlang_Context context) {
+  FURLANG_SPARSE_SET_FOREACH(&context->things, Furlang_Thing, t) {
+    if (_furlang_context_get_thing(context, *t)->referenceCount) continue;
+    _furlang_context_remove_thing(context, *t);
+  }
+}
+
 bool furlang_context_is_running(Furlang_Context context) {
   FURLANG_SPARSE_SET_FOREACH(&context->executors, Furlang_Executor, e) {
     if (furlang_executor_is_running(context, *e)) return true;

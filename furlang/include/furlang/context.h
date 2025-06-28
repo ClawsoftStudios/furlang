@@ -12,6 +12,8 @@ typedef struct _Furlang_Context *Furlang_Context;
 Furlang_Context furlang_context_create(Fbc fbc, Furlang_Allocator *allocator);
 void furlang_context_destroy(Furlang_Context context, Furlang_Allocator *allocator);
 
+void furlang_context_collect(Furlang_Context context);
+
 bool furlang_context_is_running(Furlang_Context context);
 
 bool furlang_context_step(Furlang_Context context);
