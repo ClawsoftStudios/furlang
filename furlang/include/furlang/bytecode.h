@@ -23,9 +23,10 @@ typedef enum Furlang_Instruction {
   FURLANG_INSTRUCTION_STRG, // Store global variable
   FURLANG_INSTRUCTION_LODG, // Load global variable
 
-  FURLANG_INSTRUCTION_JMP, // Jump
-  FURLANG_INSTRUCTION_JZ,  // Jump zero
-  FURLANG_INSTRUCTION_JNZ, // Jump not zero
+  FURLANG_INSTRUCTION_JMP,  // Jump
+  FURLANG_INSTRUCTION_JZ,   // Jump zero
+  FURLANG_INSTRUCTION_JNZ,  // Jump not zero
+  FURLANG_INSTRUCTION_CALL, // Call function
 
   FURLANG_INSTRUCTION_ADD,
   FURLANG_INSTRUCTION_SUB,

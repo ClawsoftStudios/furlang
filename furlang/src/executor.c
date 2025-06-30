@@ -103,6 +103,20 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
     assert(addr < context->bytecodeLength);
     if (*(Furlang_Int*)_furlang_context_get_thing(context, _furlang_executor_pop(context, e))->data != 0) FURLANG_DA_AT(&e->callStack, e->callStack.count-1).position = addr;
   } break;
+  case FURLANG_INSTRUCTION_CALL: {
+    uint64_t func = _furlang_executor_get_uint64(context, e);
+    assert(func < context->fbcHeader.functionCount);
+    Fbc_Header_Function function = context->fbcHeader.functions[func];
+
+    Furlang_Thing *params = malloc(sizeof(*params) * function.paramCount);
+    assert(params);
+
+    for (size_t i = 0; i < function.paramCount; ++i) params[function.paramCount-i-1] = _furlang_executor_pop(context, e);
+    furlang_executor_step_in(context, executor, function.address);
+    for (size_t i = 0; i < function.paramCount; ++i) _furlang_executor_store_variable(context, e, i, params[i]);
+
+    free(params);
+  } break;
   case FURLANG_INSTRUCTION_ADD: {
     Furlang_Thing a = _furlang_executor_pop(context, e);
     Furlang_Thing b = _furlang_executor_pop(context, e);
@@ -198,12 +212,14 @@ void furlang_executor_step_in(Furlang_Context context, Furlang_Executor executor
   FURLANG_DA_APPEND(&e->callStack, ((_Furlang_Call){
     .position = position
   }));
+  _furlang_executor_push_scope(e);
 }
 
 bool furlang_executor_step_out(Furlang_Context context, Furlang_Executor executor) {
   assert(context);
   _Furlang_Executor *e = _furlang_context_get_executor(context, executor);
   FURLANG_DA_POP_BACK(&e->callStack);
+  _furlang_executor_pop_scope(context, e);
 
   if (e->callStack.count) return true;
   return (e->flags = 0, false);
@@ -254,6 +270,21 @@ Furlang_Int _furlang_executor_get_int(Furlang_Context context, _Furlang_Executor
   assert(topCall->position+4 <= context->bytecodeLength);
   Furlang_Int value = (context->bytecode[topCall->position+0] << 8*3) | (context->bytecode[topCall->position+1] << 8*2) | (context->bytecode[topCall->position+2] << 8*1) | (context->bytecode[topCall->position+3] << 8*0);
   topCall->position += 4;
+  return value;
+}
+
+uint64_t _furlang_executor_get_uint64(Furlang_Context context, _Furlang_Executor *e) {
+  assert(context);
+  assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
+  assert(e->callStack.count);
+
+  _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
+  assert(topCall->position+8 <= context->bytecodeLength);
+  uint64_t value = ((uint64_t)context->bytecode[topCall->position+0] << 8*7) | ((uint64_t)context->bytecode[topCall->position+1] << 8*6)
+                 | ((uint64_t)context->bytecode[topCall->position+2] << 8*5) | ((uint64_t)context->bytecode[topCall->position+3] << 8*4)
+                 | ((uint64_t)context->bytecode[topCall->position+4] << 8*3) | ((uint64_t)context->bytecode[topCall->position+5] << 8*2)
+                 | ((uint64_t)context->bytecode[topCall->position+6] << 8*1) | ((uint64_t)context->bytecode[topCall->position+7] << 8*0);
+  topCall->position += 8;
   return value;
 }
 
@@ -324,18 +355,8 @@ void _furlang_executor_store_variable(Furlang_Context context, _Furlang_Executor
   assert(e->scopes.count);
 
   _Furlang_Scope *scope = &FURLANG_DA_AT(&e->scopes, e->scopes.count-1);
-  if (e->scopes.count > 1) {
-    if (index >= e->scopes.items[0].variables.count) index -= e->scopes.items[0].variables.count;
-    else scope = &FURLANG_DA_AT(&e->scopes, 0);
-  }
-
-  uint16_t i = scope->variables.count;
-  FURLANG_DA_RESIZE(&scope->variables, index+1);
-  for (; i <= index; ++i) FURLANG_DA_AT(&scope->variables, i) = _FURLANG_DEAD_THING;
-
   if (FURLANG_DA_AT(&scope->variables, index) != _FURLANG_DEAD_THING) furlang_thing_unreference(context, FURLANG_DA_AT(&scope->variables, index));
   FURLANG_DA_AT(&scope->variables, index) = thing;
-
   furlang_thing_reference(context, thing);
 }
 
@@ -344,12 +365,6 @@ Furlang_Thing _furlang_executor_load_variable(_Furlang_Executor *e, uint16_t ind
   assert(e->scopes.count);
 
   _Furlang_Scope *scope = &FURLANG_DA_AT(&e->scopes, e->scopes.count-1);
-  if (e->scopes.count > 1) {
-    if (index >= e->scopes.items[0].variables.count) index -= e->scopes.items[0].variables.count;
-    else scope = &FURLANG_DA_AT(&e->scopes, 0);
-  }
-
   assert(index < scope->variables.count);
-
   return FURLANG_DA_AT(&scope->variables, index);
 }

@@ -85,14 +85,9 @@ Furlang_Executor _furlang_context_append_executor(Furlang_Context context, Furla
   if (context->deadExecutors.count) executor = FURLANG_DA_POP_BACK(&context->deadExecutors);
   else executor = FURLANG_SPARSE_SET_SIZE(&context->executors);
 
-  _Furlang_Executor e = { .flags = _FURLANG_EXECUTOR_FLAG_RUNNING };
-  FURLANG_DA_APPEND(&e.callStack, ((_Furlang_Call){
-    .position = position
-  }));
+  FURLANG_SPARSE_SET_PUT(&context->executors, Furlang_Executor, executor, ((_Furlang_Executor){ .flags = _FURLANG_EXECUTOR_FLAG_RUNNING }));
+  furlang_executor_step_in(context, executor, position);
 
-  _furlang_executor_push_scope(&e);
-
-  FURLANG_SPARSE_SET_PUT(&context->executors, Furlang_Executor, executor, e);
   return executor;
 }
 
