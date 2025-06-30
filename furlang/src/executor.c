@@ -82,6 +82,12 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
   case FURLANG_INSTRUCTION_LOD: {
     _furlang_executor_push(context, e, _furlang_executor_load_variable(e, _furlang_executor_get_ushort(context, e)));
   } break;
+  case FURLANG_INSTRUCTION_STRG: {
+    _furlang_context_store_global_var(context, _furlang_executor_get_ushort(context, e), _furlang_executor_pop(context, e));
+  } break;
+  case FURLANG_INSTRUCTION_LODG: {
+    _furlang_executor_push(context, e, _furlang_context_load_global_var(context, _furlang_executor_get_ushort(context, e)));
+  } break;
   case FURLANG_INSTRUCTION_JMP: {
     Furlang_Addr addr = _furlang_executor_get_addr(context, e);
     assert(addr < context->bytecodeLength);

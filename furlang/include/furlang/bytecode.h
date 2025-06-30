@@ -20,6 +20,9 @@ typedef enum Furlang_Instruction {
   FURLANG_INSTRUCTION_STR, // Store variable
   FURLANG_INSTRUCTION_LOD, // Load variable
 
+  FURLANG_INSTRUCTION_STRG, // Store global variable
+  FURLANG_INSTRUCTION_LODG, // Load global variable
+
   FURLANG_INSTRUCTION_JMP, // Jump
   FURLANG_INSTRUCTION_JZ,  // Jump zero
   FURLANG_INSTRUCTION_JNZ, // Jump not zero
@@ -50,6 +53,7 @@ typedef struct Fbc_Header {
   size_t entryFunction;
   size_t functionCount;
   Fbc_Header_Function *functions;
+  uint16_t globalVariableCount;
 } Fbc_Header;
 
 typedef struct Fbc {

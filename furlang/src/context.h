@@ -39,6 +39,11 @@ struct _Furlang_Context {
   } deadThings;
 
   Furlang_Arena thingsDataArena; // Arena for things' data
+
+  struct {
+    Furlang_Thing *items;
+    size_t count;
+  } globalVariables;
 };
 
 Furlang_Executor _furlang_context_append_executor(Furlang_Context context, Furlang_Position position);
@@ -48,5 +53,8 @@ void _furlang_context_remove_executor(Furlang_Context context, Furlang_Executor 
 Furlang_Thing _furlang_context_append_thing(Furlang_Context context, Furlang_Thing_Type type);
 _Furlang_Thing *_furlang_context_get_thing(Furlang_Context context, Furlang_Thing id);
 void _furlang_context_remove_thing(Furlang_Context context, Furlang_Thing id);
+
+void _furlang_context_store_global_var(Furlang_Context context, uint16_t index, Furlang_Thing thing);
+Furlang_Thing _furlang_context_load_global_var(Furlang_Context context, uint16_t index);
 
 #endif // __FURLANG_CONTEXT_H_
