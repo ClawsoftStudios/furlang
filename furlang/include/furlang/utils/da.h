@@ -50,6 +50,7 @@
   } while (0)
 
 #define FURLANG_DA_AT(da, idx) (da)->items[assert(idx < (da)->count), idx]
+#define FURLANG_DA_BACK(da) FURLANG_DA_AT(da, (da)->count-1)
 
 #define FURLANG_DA_FREE(da) free((da)->items)
 

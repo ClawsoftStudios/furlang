@@ -235,9 +235,6 @@ void _furlang_executor_cleanup(Furlang_Context context, _Furlang_Executor *e) {
 
   FURLANG_DA_FREE(&e->callStack);
 
-  while (e->thingStack.count) furlang_thing_unreference(context, FURLANG_DA_POP_BACK(&e->thingStack));
-  FURLANG_DA_FREE(&e->thingStack);
-
   memset(e, 0, sizeof(*e));
 }
 
@@ -318,22 +315,29 @@ uint16_t _furlang_executor_get_ushort(Furlang_Context context, _Furlang_Executor
 void _furlang_executor_push(Furlang_Context context, _Furlang_Executor *e, Furlang_Thing thing) {
   assert(e);
   assert(thing != (Furlang_Thing)-1);
+
+  _Furlang_Scope *scope = &FURLANG_DA_BACK(&e->scopes);
+  FURLANG_DA_APPEND(&scope->thingStack, thing);
   furlang_thing_reference(context, thing);
-  FURLANG_DA_APPEND(&e->thingStack, thing);
 }
 
 Furlang_Thing _furlang_executor_pop(Furlang_Context context, _Furlang_Executor *e) {
   assert(e);
-  assert(e->thingStack.count);
-  Furlang_Thing thing = FURLANG_DA_POP_BACK(&e->thingStack);
+
+  _Furlang_Scope *scope = &FURLANG_DA_BACK(&e->scopes);
+  assert(scope->thingStack.count);
+
+  Furlang_Thing thing = FURLANG_DA_POP_BACK(&scope->thingStack);
   furlang_thing_unreference(context, thing);
   return thing;
 }
 
 Furlang_Thing _furlang_executor_peek(_Furlang_Executor *e) {
   assert(e);
-  assert(e->thingStack.count);
-  return e->thingStack.items[e->thingStack.count-1];
+
+  _Furlang_Scope *scope = &FURLANG_DA_BACK(&e->scopes);
+  assert(scope->thingStack.count);
+  return FURLANG_DA_BACK(&scope->thingStack);
 }
 
 void _furlang_executor_push_scope(_Furlang_Executor *e) {
@@ -348,13 +352,21 @@ void _furlang_executor_pop_scope(Furlang_Context context, _Furlang_Executor *e) 
 
   while (scope.variables.count) furlang_thing_unreference(context, FURLANG_DA_POP_BACK(&scope.variables));
   FURLANG_DA_FREE(&scope.variables);
+
+  while (scope.thingStack.count) furlang_thing_unreference(context, FURLANG_DA_POP_BACK(&scope.thingStack));
+  FURLANG_DA_FREE(&scope.thingStack);
 }
 
 void _furlang_executor_store_variable(Furlang_Context context, _Furlang_Executor *e, uint16_t index, Furlang_Thing thing) {
   assert(e);
   assert(e->scopes.count);
 
-  _Furlang_Scope *scope = &FURLANG_DA_AT(&e->scopes, e->scopes.count-1);
+  _Furlang_Scope *scope = &FURLANG_DA_BACK(&e->scopes);
+
+  size_t i = scope->variables.count;
+  FURLANG_DA_RESIZE(&scope->variables, index+1);
+  for (; i < scope->variables.count; ++i) FURLANG_DA_AT(&scope->variables, i) = _FURLANG_DEAD_THING;
+
   if (FURLANG_DA_AT(&scope->variables, index) != _FURLANG_DEAD_THING) furlang_thing_unreference(context, FURLANG_DA_AT(&scope->variables, index));
   FURLANG_DA_AT(&scope->variables, index) = thing;
   furlang_thing_reference(context, thing);

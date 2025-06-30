@@ -17,6 +17,12 @@ typedef struct _Furlang_Scope {
     uint16_t capacity;
     uint16_t count;
   } variables;
+
+  struct {
+    Furlang_Thing *items;
+    size_t capacity;
+    size_t count;
+  } thingStack;
 } _Furlang_Scope;
 
 typedef enum _Furlang_Executor_Flag_Bits {
@@ -39,12 +45,6 @@ typedef struct _Furlang_Executor {
     size_t capacity;
     size_t count;
   } callStack;
-
-  struct {
-    Furlang_Thing *items;
-    size_t capacity;
-    size_t count;
-  } thingStack;
 } _Furlang_Executor;
 
 void _furlang_executor_cleanup(Furlang_Context context, _Furlang_Executor *e);
