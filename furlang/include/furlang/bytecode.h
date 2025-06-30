@@ -11,6 +11,8 @@ typedef enum Furlang_Instruction {
 
   FURLANG_INSTRUCTION_IPUSH,  // Push int
   FURLANG_INSTRUCTION_BIPUSH, // Push byte as int
+  FURLANG_INSTRUCTION_FPUSH,  // Push function
+  FURLANG_INSTRUCTION_SFPUSH, // Push short as function
 
   FURLANG_INSTRUCTION_DUP,
   FURLANG_INSTRUCTION_SWAP,

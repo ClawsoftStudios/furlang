@@ -60,6 +60,22 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
 
     _furlang_executor_push(context, e, thing);
   } break;
+  case FURLANG_INSTRUCTION_FPUSH: {
+    Furlang_Thing thing = _furlang_context_append_thing(context, FURLANG_THING_TYPE_FUNCTION);
+    _Furlang_Thing *t = _furlang_context_get_thing(context, thing);
+
+    *(Furlang_Function*)t->data = _furlang_executor_get_ulong(context, e);
+
+    _furlang_executor_push(context, e, thing);
+  } break;
+  case FURLANG_INSTRUCTION_SFPUSH: {
+    Furlang_Thing thing = _furlang_context_append_thing(context, FURLANG_THING_TYPE_FUNCTION);
+    _Furlang_Thing *t = _furlang_context_get_thing(context, thing);
+
+    *(Furlang_Function*)t->data = _furlang_executor_get_ushort(context, e);
+
+    _furlang_executor_push(context, e, thing);
+  } break;
   case FURLANG_INSTRUCTION_DUP: {
     Furlang_Thing thing = _furlang_executor_peek(e);
     _furlang_executor_push(context, e, furlang_thing_clone(context, thing));
@@ -104,9 +120,12 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
     if (*(Furlang_Int*)_furlang_context_get_thing(context, _furlang_executor_pop(context, e))->data != 0) FURLANG_DA_AT(&e->callStack, e->callStack.count-1).position = addr;
   } break;
   case FURLANG_INSTRUCTION_CALL: {
-    uint64_t func = _furlang_executor_get_uint64(context, e);
-    assert(func < context->fbcHeader.functionCount);
-    Fbc_Header_Function function = context->fbcHeader.functions[func];
+    Furlang_Thing thing = _furlang_executor_pop(context, e);
+    _Furlang_Thing *t = _furlang_context_get_thing(context, thing);
+    assert(t->type == FURLANG_THING_TYPE_FUNCTION);
+
+    assert(*(Furlang_Function*)t->data < context->fbcHeader.functionCount);
+    Fbc_Header_Function function = context->fbcHeader.functions[*(Furlang_Function*)t->data];
 
     Furlang_Thing *params = malloc(sizeof(*params) * function.paramCount);
     assert(params);
@@ -117,86 +136,22 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
 
     free(params);
   } break;
-  case FURLANG_INSTRUCTION_ADD: {
-    Furlang_Thing a = _furlang_executor_pop(context, e);
-    Furlang_Thing b = _furlang_executor_pop(context, e);
 
-    _Furlang_Thing *at = _furlang_context_get_thing(context, a);
-    _Furlang_Thing *bt = _furlang_context_get_thing(context, b);
+  #define BINOP(op)                                                                               \
+    {                                                                                             \
+      _Furlang_Thing *b = _furlang_context_get_thing(context, _furlang_executor_pop(context, e)); \
+      _Furlang_Thing *a = _furlang_context_get_thing(context, _furlang_executor_pop(context, e)); \
+                                                                                                  \
+      _Furlang_Thing_Op_Func func = _furlang_thing_ops[_FURLANG_THING_OP(a->type, b->type)][op];  \
+      assert(func);                                                                               \
+      _furlang_executor_push(context, e, func(context, a, b));                                    \
+    } break
 
-    Furlang_Int av = *(Furlang_Int*)at->data;
-    Furlang_Int bv = *(Furlang_Int*)bt->data;
-
-    Furlang_Thing c = furlang_thing_create(context, FURLANG_THING_TYPE_INT);
-    _Furlang_Thing *ct = _furlang_context_get_thing(context, c);
-    _furlang_executor_push(context, e, c);
-
-    *(Furlang_Int*)ct->data = bv + av;
-  } break;
-  case FURLANG_INSTRUCTION_SUB: {
-    Furlang_Thing a = _furlang_executor_pop(context, e);
-    Furlang_Thing b = _furlang_executor_pop(context, e);
-
-    _Furlang_Thing *at = _furlang_context_get_thing(context, a);
-    _Furlang_Thing *bt = _furlang_context_get_thing(context, b);
-
-    Furlang_Int av = *(Furlang_Int*)at->data;
-    Furlang_Int bv = *(Furlang_Int*)bt->data;
-
-    Furlang_Thing c = furlang_thing_create(context, FURLANG_THING_TYPE_INT);
-    _Furlang_Thing *ct = _furlang_context_get_thing(context, c);
-    _furlang_executor_push(context, e, c);
-
-    *(Furlang_Int*)ct->data = bv - av;
-  } break;
-  case FURLANG_INSTRUCTION_MUL: {
-    Furlang_Thing a = _furlang_executor_pop(context, e);
-    Furlang_Thing b = _furlang_executor_pop(context, e);
-
-    _Furlang_Thing *at = _furlang_context_get_thing(context, a);
-    _Furlang_Thing *bt = _furlang_context_get_thing(context, b);
-
-    Furlang_Int av = *(Furlang_Int*)at->data;
-    Furlang_Int bv = *(Furlang_Int*)bt->data;
-
-    Furlang_Thing c = furlang_thing_create(context, FURLANG_THING_TYPE_INT);
-    _Furlang_Thing *ct = _furlang_context_get_thing(context, c);
-    _furlang_executor_push(context, e, c);
-
-    *(Furlang_Int*)ct->data = bv * av;
-  } break;
-  case FURLANG_INSTRUCTION_DIV: {
-    Furlang_Thing a = _furlang_executor_pop(context, e);
-    Furlang_Thing b = _furlang_executor_pop(context, e);
-
-    _Furlang_Thing *at = _furlang_context_get_thing(context, a);
-    _Furlang_Thing *bt = _furlang_context_get_thing(context, b);
-
-    Furlang_Int av = *(Furlang_Int*)at->data;
-    Furlang_Int bv = *(Furlang_Int*)bt->data;
-
-    Furlang_Thing c = furlang_thing_create(context, FURLANG_THING_TYPE_INT);
-    _Furlang_Thing *ct = _furlang_context_get_thing(context, c);
-    _furlang_executor_push(context, e, c);
-
-    *(Furlang_Int*)ct->data = bv / av;
-  } break;
-  case FURLANG_INSTRUCTION_MOD: {
-    Furlang_Thing a = _furlang_executor_pop(context, e);
-    Furlang_Thing b = _furlang_executor_pop(context, e);
-
-    _Furlang_Thing *at = _furlang_context_get_thing(context, a);
-    _Furlang_Thing *bt = _furlang_context_get_thing(context, b);
-
-    Furlang_Int av = *(Furlang_Int*)at->data;
-    Furlang_Int bv = *(Furlang_Int*)bt->data;
-
-    Furlang_Thing c = furlang_thing_create(context, FURLANG_THING_TYPE_INT);
-    _Furlang_Thing *ct = _furlang_context_get_thing(context, c);
-    _furlang_executor_push(context, e, c);
-
-    *(Furlang_Int*)ct->data = bv % av;
-  } break;
+  case FURLANG_INSTRUCTION_ADD: BINOP(_FURLANG_THING_OP_ADD);
+  case FURLANG_INSTRUCTION_SUB: BINOP(_FURLANG_THING_OP_SUB);
+  case FURLANG_INSTRUCTION_MUL: BINOP(_FURLANG_THING_OP_MUL);
+  case FURLANG_INSTRUCTION_DIV: BINOP(_FURLANG_THING_OP_DIV);
+  case FURLANG_INSTRUCTION_MOD: BINOP(_FURLANG_THING_OP_MOD);
 
   case COUNT_FURLANG_INSTRUCTIONS:
   default: assert(0);
@@ -270,21 +225,6 @@ Furlang_Int _furlang_executor_get_int(Furlang_Context context, _Furlang_Executor
   return value;
 }
 
-uint64_t _furlang_executor_get_uint64(Furlang_Context context, _Furlang_Executor *e) {
-  assert(context);
-  assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
-  assert(e->callStack.count);
-
-  _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
-  assert(topCall->position+8 <= context->bytecodeLength);
-  uint64_t value = ((uint64_t)context->bytecode[topCall->position+0] << 8*7) | ((uint64_t)context->bytecode[topCall->position+1] << 8*6)
-                 | ((uint64_t)context->bytecode[topCall->position+2] << 8*5) | ((uint64_t)context->bytecode[topCall->position+3] << 8*4)
-                 | ((uint64_t)context->bytecode[topCall->position+4] << 8*3) | ((uint64_t)context->bytecode[topCall->position+5] << 8*2)
-                 | ((uint64_t)context->bytecode[topCall->position+6] << 8*1) | ((uint64_t)context->bytecode[topCall->position+7] << 8*0);
-  topCall->position += 8;
-  return value;
-}
-
 Furlang_Addr _furlang_executor_get_addr(Furlang_Context context, _Furlang_Executor *e) {
   assert(context);
   assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
@@ -309,6 +249,21 @@ uint16_t _furlang_executor_get_ushort(Furlang_Context context, _Furlang_Executor
   assert(topCall->position+2 <= context->bytecodeLength);
   uint16_t value = (context->bytecode[topCall->position+0] << 8) | (context->bytecode[topCall->position+1]);
   topCall->position += 2;
+  return value;
+}
+
+uint64_t _furlang_executor_get_ulong(Furlang_Context context, _Furlang_Executor *e) {
+  assert(context);
+  assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
+  assert(e->callStack.count);
+
+  _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
+  assert(topCall->position+8 <= context->bytecodeLength);
+  uint64_t value = ((uint64_t)context->bytecode[topCall->position+0] << 8*7) | ((uint64_t)context->bytecode[topCall->position+1] << 8*6)
+                 | ((uint64_t)context->bytecode[topCall->position+2] << 8*5) | ((uint64_t)context->bytecode[topCall->position+3] << 8*4)
+                 | ((uint64_t)context->bytecode[topCall->position+4] << 8*3) | ((uint64_t)context->bytecode[topCall->position+5] << 8*2)
+                 | ((uint64_t)context->bytecode[topCall->position+6] << 8*1) | ((uint64_t)context->bytecode[topCall->position+7] << 8*0);
+  topCall->position += 8;
   return value;
 }
 

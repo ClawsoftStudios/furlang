@@ -52,9 +52,9 @@ void _furlang_executor_cleanup(Furlang_Context context, _Furlang_Executor *e);
 Furlang_Instruction _furlang_executor_get_instruction(Furlang_Context context, _Furlang_Executor *e);
 Furlang_Byte _furlang_executor_get_byte(Furlang_Context context, _Furlang_Executor *e);
 Furlang_Int _furlang_executor_get_int(Furlang_Context context, _Furlang_Executor *e);
-uint64_t _furlang_executor_get_uint64(Furlang_Context context, _Furlang_Executor *e);
 Furlang_Addr _furlang_executor_get_addr(Furlang_Context context, _Furlang_Executor *e);
 uint16_t _furlang_executor_get_ushort(Furlang_Context context, _Furlang_Executor *e);
+uint64_t _furlang_executor_get_ulong(Furlang_Context context, _Furlang_Executor *e);
 
 void _furlang_executor_push(Furlang_Context context, _Furlang_Executor *e, Furlang_Thing thing);
 Furlang_Thing _furlang_executor_pop(Furlang_Context context, _Furlang_Executor *e);

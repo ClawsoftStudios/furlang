@@ -9,13 +9,15 @@
 
 typedef Furlang_Id Furlang_Thing;
 
-typedef int8_t  Furlang_Byte;
-typedef int16_t Furlang_Short;
-typedef int32_t Furlang_Int;
-typedef int64_t Furlang_Long;
+typedef int8_t   Furlang_Byte;
+typedef int16_t  Furlang_Short;
+typedef int32_t  Furlang_Int;
+typedef int64_t  Furlang_Long;
+typedef uint64_t Furlang_Function;
 
 typedef enum Furlang_Thing_Type {
   FURLANG_THING_TYPE_INT = 0,
+  FURLANG_THING_TYPE_FUNCTION,
 
   COUNT_FURLANG_THING_TYPES
 } Furlang_Thing_Type;

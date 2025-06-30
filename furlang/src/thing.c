@@ -38,6 +38,7 @@ void furlang_thing_unreference(Furlang_Context context, Furlang_Thing thing) {
 
 
 
-size_t _furlang_thing_type_size_map[COUNT_FURLANG_THING_TYPES] = {
-  [FURLANG_THING_TYPE_INT] = sizeof(Furlang_Int),
+const size_t _furlang_thing_type_size_map[COUNT_FURLANG_THING_TYPES] = {
+  [FURLANG_THING_TYPE_INT]      = sizeof(Furlang_Int),
+  [FURLANG_THING_TYPE_FUNCTION] = sizeof(Furlang_Function),
 };
