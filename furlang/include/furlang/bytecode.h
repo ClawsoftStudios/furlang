@@ -1,6 +1,8 @@
 #ifndef   _FURLANG_BYTECODE_H_
 #define   _FURLANG_BYTECODE_H_
 
+#include "furlang/alloc/allocator.h"
+
 #include <stddef.h>
 #include <stdint.h>
 
@@ -66,5 +68,8 @@ typedef struct Fbc {
 } Fbc;
 
 #define FBC_MAGIC { 'F', 'b', 'c', 0x69 }
+
+void furlang_write_fbc_to_file(Fbc fbc, const char *filepath);
+Fbc furlang_read_fbc_from_file(const char *filepath, Furlang_Allocator *allocator);
 
 #endif // _FURLANG_BYTECODE_H_

@@ -1,0 +1,32 @@
+; global n 20
+
+main(0):
+  ; loadg %n
+  ipush 20
+  fpush fib
+  call
+  ret
+fib(1):
+  ipush 0
+  store 1
+
+  ipush 1
+  store 2
+ loop:
+  load 0
+  jz .end
+
+  load 1
+  dup
+  load 2
+  add
+  load 2
+  store 1
+  store 2
+
+  load 0
+  ipush 1
+  sub
+  store 0
+ end:
+  ret
