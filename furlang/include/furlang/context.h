@@ -1,7 +1,6 @@
 #ifndef   _FURLANG_CONTEXT_H_
 #define   _FURLANG_CONTEXT_H_
 
-#include "furlang/bytecode.h"
 #include "furlang/alloc/allocator.h"
 
 #include <stddef.h>
@@ -9,7 +8,7 @@
 
 typedef struct _Furlang_Context *Furlang_Context;
 
-Furlang_Context furlang_context_create(Fbc fbc, Furlang_Allocator *allocator);
+Furlang_Context furlang_context_create(Furlang_Allocator *allocator);
 void furlang_context_destroy(Furlang_Context context, Furlang_Allocator *allocator);
 
 void furlang_context_collect(Furlang_Context context);

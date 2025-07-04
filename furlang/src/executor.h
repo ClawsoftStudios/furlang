@@ -2,8 +2,10 @@
 #define   __FURLANG_EXECUTOR_H_
 
 #include "furlang/executor.h"
+
 #include "furlang/thing.h"
 #include "furlang/context.h"
+#include "./module.h"
 
 #include "furlang/bytecode.h"
 
@@ -49,12 +51,14 @@ typedef struct _Furlang_Executor {
 
 void _furlang_executor_cleanup(Furlang_Context context, _Furlang_Executor *e);
 
-Furlang_Instruction _furlang_executor_get_instruction(Furlang_Context context, _Furlang_Executor *e);
-Furlang_Byte _furlang_executor_get_byte(Furlang_Context context, _Furlang_Executor *e);
-Furlang_Int _furlang_executor_get_int(Furlang_Context context, _Furlang_Executor *e);
-Furlang_Addr _furlang_executor_get_addr(Furlang_Context context, _Furlang_Executor *e);
-uint16_t _furlang_executor_get_ushort(Furlang_Context context, _Furlang_Executor *e);
-uint64_t _furlang_executor_get_ulong(Furlang_Context context, _Furlang_Executor *e);
+_Furlang_Module *_furlang_executor_get_module(Furlang_Context context, _Furlang_Executor *e);
+
+Furlang_Instruction _furlang_executor_get_instruction(_Furlang_Executor *e, _Furlang_Module *module);
+Furlang_Byte _furlang_executor_get_byte(_Furlang_Executor *e, _Furlang_Module *module);
+Furlang_Int _furlang_executor_get_int(_Furlang_Executor *e, _Furlang_Module *module);
+Furlang_Addr _furlang_executor_get_addr(_Furlang_Executor *e, _Furlang_Module *module);
+uint16_t _furlang_executor_get_ushort(_Furlang_Executor *e, _Furlang_Module *module);
+uint64_t _furlang_executor_get_ulong(_Furlang_Executor *e, _Furlang_Module *module);
 
 void _furlang_executor_push(Furlang_Context context, _Furlang_Executor *e, Furlang_Thing thing);
 Furlang_Thing _furlang_executor_pop(Furlang_Context context, _Furlang_Executor *e);

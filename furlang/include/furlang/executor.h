@@ -6,13 +6,18 @@
 
 #include "furlang/id.h"
 
+#include "furlang/bytecode.h"
 #include "furlang/context.h"
+#include "furlang/module.h"
 
-typedef uint64_t Furlang_Position;
+typedef struct Furlang_Position {
+  Furlang_Module module;
+  Furlang_Addr address;
+} Furlang_Position;
 
 typedef Furlang_Id Furlang_Executor;
 
-Furlang_Executor furlang_executor_create(Furlang_Context context, Furlang_Position position);
+Furlang_Executor furlang_executor_create(Furlang_Context context, Furlang_Module module, size_t function);
 void furlang_executor_destroy(Furlang_Context context, Furlang_Executor executor);
 
 bool furlang_executor_is_running(Furlang_Context context, Furlang_Executor executor);

@@ -6,9 +6,9 @@
 #include <string.h>
 #include <assert.h>
 
-Furlang_Executor furlang_executor_create(Furlang_Context context, Furlang_Position position) {
+Furlang_Executor furlang_executor_create(Furlang_Context context, Furlang_Module module, size_t function) {
   assert(context);
-  return _furlang_context_append_executor(context, position);
+  return _furlang_context_append_executor(context, (Furlang_Position){ .module = module, .address = FURLANG_DA_AT(&FURLANG_DA_AT(&context->modules, module).functions, function).address });
 }
 
 void furlang_executor_destroy(Furlang_Context context, Furlang_Executor executor) {
@@ -40,7 +40,8 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
   if (furlang_executor_is_paused(context, executor)) return false;
 
   _Furlang_Executor *e = _furlang_context_get_executor(context, executor);
-  Furlang_Instruction instruction = _furlang_executor_get_instruction(context, e);
+  _Furlang_Module *module = _furlang_executor_get_module(context, e);
+  Furlang_Instruction instruction = _furlang_executor_get_instruction(e, module);
 
   switch (instruction) {
   case FURLANG_INSTRUCTION_NOP: break;
@@ -48,7 +49,7 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
     Furlang_Thing thing = _furlang_context_append_thing(context, FURLANG_THING_TYPE_INT);
     _Furlang_Thing *t = _furlang_context_get_thing(context, thing);
 
-    *(Furlang_Int*)t->data = _furlang_executor_get_int(context, e);
+    *(Furlang_Int*)t->data = _furlang_executor_get_int(e, module);
 
     _furlang_executor_push(context, e, thing);
   } break;
@@ -56,7 +57,7 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
     Furlang_Thing thing = _furlang_context_append_thing(context, FURLANG_THING_TYPE_INT);
     _Furlang_Thing *t = _furlang_context_get_thing(context, thing);
 
-    *(Furlang_Int*)t->data = _furlang_executor_get_byte(context, e);
+    *(Furlang_Int*)t->data = _furlang_executor_get_byte(e, module);
 
     _furlang_executor_push(context, e, thing);
   } break;
@@ -64,7 +65,7 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
     Furlang_Thing thing = _furlang_context_append_thing(context, FURLANG_THING_TYPE_FUNCTION);
     _Furlang_Thing *t = _furlang_context_get_thing(context, thing);
 
-    *(Furlang_Function*)t->data = _furlang_executor_get_ulong(context, e);
+    *(Furlang_Function*)t->data = _furlang_executor_get_ulong(e, module);
 
     _furlang_executor_push(context, e, thing);
   } break;
@@ -72,7 +73,7 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
     Furlang_Thing thing = _furlang_context_append_thing(context, FURLANG_THING_TYPE_FUNCTION);
     _Furlang_Thing *t = _furlang_context_get_thing(context, thing);
 
-    *(Furlang_Function*)t->data = _furlang_executor_get_ushort(context, e);
+    *(Furlang_Function*)t->data = _furlang_executor_get_ushort(e, module);
 
     _furlang_executor_push(context, e, thing);
   } break;
@@ -93,45 +94,44 @@ bool furlang_executor_step(Furlang_Context context, Furlang_Executor executor) {
     return furlang_executor_step_out(context, executor);
   } break;
   case FURLANG_INSTRUCTION_STR: {
-    _furlang_executor_store_variable(context, e, _furlang_executor_get_ushort(context, e), _furlang_executor_pop(context, e));
+    _furlang_executor_store_variable(context, e, _furlang_executor_get_ushort(e, module), _furlang_executor_pop(context, e));
   } break;
   case FURLANG_INSTRUCTION_LOD: {
-    _furlang_executor_push(context, e, _furlang_executor_load_variable(e, _furlang_executor_get_ushort(context, e)));
+    _furlang_executor_push(context, e, _furlang_executor_load_variable(e, _furlang_executor_get_ushort(e, module)));
   } break;
   case FURLANG_INSTRUCTION_STRG: {
-    _furlang_context_store_global_var(context, _furlang_executor_get_ushort(context, e), _furlang_executor_pop(context, e));
+    _furlang_module_store_global_var(context, module, _furlang_executor_get_ushort(e, module), _furlang_executor_pop(context, e));
   } break;
   case FURLANG_INSTRUCTION_LODG: {
-    _furlang_executor_push(context, e, _furlang_context_load_global_var(context, _furlang_executor_get_ushort(context, e)));
+    _furlang_executor_push(context, e, _furlang_module_load_global_var(context, module, _furlang_executor_get_ushort(e, module)));
   } break;
   case FURLANG_INSTRUCTION_JMP: {
-    Furlang_Addr addr = _furlang_executor_get_addr(context, e);
-    assert(addr < context->bytecodeLength);
-    FURLANG_DA_AT(&e->callStack, e->callStack.count-1).position = addr;
+    Furlang_Addr addr = _furlang_executor_get_addr(e, module);
+    assert(addr < module->bytecodeLength);
+    FURLANG_DA_BACK(&e->callStack).position.address = addr;
   } break;
   case FURLANG_INSTRUCTION_JZ: {
-    Furlang_Addr addr = _furlang_executor_get_addr(context, e);
-    assert(addr < context->bytecodeLength);
-    if (*(Furlang_Int*)_furlang_context_get_thing(context, _furlang_executor_pop(context, e))->data == 0) FURLANG_DA_AT(&e->callStack, e->callStack.count-1).position = addr;
+    Furlang_Addr addr = _furlang_executor_get_addr(e, module);
+    assert(addr < module->bytecodeLength);
+    if (*(Furlang_Int*)_furlang_context_get_thing(context, _furlang_executor_pop(context, e))->data == 0) FURLANG_DA_BACK(&e->callStack).position.address = addr;
   } break;
   case FURLANG_INSTRUCTION_JNZ: {
-    Furlang_Addr addr = _furlang_executor_get_addr(context, e);
-    assert(addr < context->bytecodeLength);
-    if (*(Furlang_Int*)_furlang_context_get_thing(context, _furlang_executor_pop(context, e))->data != 0) FURLANG_DA_AT(&e->callStack, e->callStack.count-1).position = addr;
+    Furlang_Addr addr = _furlang_executor_get_addr(e, module);
+    assert(addr < module->bytecodeLength);
+    if (*(Furlang_Int*)_furlang_context_get_thing(context, _furlang_executor_pop(context, e))->data != 0) FURLANG_DA_BACK(&e->callStack).position.address = addr;
   } break;
   case FURLANG_INSTRUCTION_CALL: {
     Furlang_Thing thing = _furlang_executor_pop(context, e);
     _Furlang_Thing *t = _furlang_context_get_thing(context, thing);
     assert(t->type == FURLANG_THING_TYPE_FUNCTION);
 
-    assert(*(Furlang_Function*)t->data < context->fbcHeader.functionCount);
-    Fbc_Header_Function function = context->fbcHeader.functions[*(Furlang_Function*)t->data];
+    Furlang_Module_Function function = FURLANG_DA_AT(&module->functions, *(Furlang_Function*)t->data);
 
     Furlang_Thing *params = malloc(sizeof(*params) * function.paramCount);
     assert(params);
 
     for (size_t i = 0; i < function.paramCount; ++i) params[function.paramCount-i-1] = _furlang_executor_pop(context, e);
-    furlang_executor_step_in(context, executor, function.address);
+    furlang_executor_step_in(context, executor, (Furlang_Position){ .module = FURLANG_DA_BACK(&e->callStack).position.module, .address = function.address });
     for (size_t i = 0; i < function.paramCount; ++i) _furlang_executor_store_variable(context, e, i, params[i]);
 
     free(params);
@@ -193,77 +193,83 @@ void _furlang_executor_cleanup(Furlang_Context context, _Furlang_Executor *e) {
   memset(e, 0, sizeof(*e));
 }
 
-Furlang_Instruction _furlang_executor_get_instruction(Furlang_Context context, _Furlang_Executor *e) {
+_Furlang_Module *_furlang_executor_get_module(Furlang_Context context, _Furlang_Executor *e) {
   assert(context);
-  assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
-  assert(e->callStack.count);
-
-  _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
-  assert(topCall->position < context->bytecodeLength);
-  return context->bytecode[topCall->position++];
+  assert(e);
+  return &FURLANG_DA_AT(&context->modules, FURLANG_DA_BACK(&e->callStack).position.module);
 }
 
-Furlang_Byte _furlang_executor_get_byte(Furlang_Context context, _Furlang_Executor *e) {
-  assert(context);
+Furlang_Instruction _furlang_executor_get_instruction(_Furlang_Executor *e, _Furlang_Module *module) {
   assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
   assert(e->callStack.count);
+  assert(module);
 
-  _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
-  assert(topCall->position < context->bytecodeLength);
-  return context->bytecode[topCall->position++];
+  _Furlang_Call *topCall = &FURLANG_DA_BACK(&e->callStack);
+  assert(topCall->position.address < module->bytecodeLength);
+  return module->bytecode[topCall->position.address++];
 }
 
-Furlang_Int _furlang_executor_get_int(Furlang_Context context, _Furlang_Executor *e) {
-  assert(context);
+Furlang_Byte _furlang_executor_get_byte(_Furlang_Executor *e, _Furlang_Module *module) {
   assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
   assert(e->callStack.count);
+  assert(module);
 
   _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
-  assert(topCall->position+4 <= context->bytecodeLength);
-  Furlang_Int value = (context->bytecode[topCall->position+0] << 8*3) | (context->bytecode[topCall->position+1] << 8*2) | (context->bytecode[topCall->position+2] << 8*1) | (context->bytecode[topCall->position+3] << 8*0);
-  topCall->position += 4;
+  assert(topCall->position.address < module->bytecodeLength);
+  return module->bytecode[topCall->position.address++];
+}
+
+Furlang_Int _furlang_executor_get_int(_Furlang_Executor *e, _Furlang_Module *module) {
+  assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
+  assert(e->callStack.count);
+  assert(module);
+
+  _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
+  assert(topCall->position.address+4 <= module->bytecodeLength);
+  Furlang_Int value = (module->bytecode[topCall->position.address+0] << 8*3) | (module->bytecode[topCall->position.address+1] << 8*2) | (module->bytecode[topCall->position.address+2] << 8*1) | (module->bytecode[topCall->position.address+3] << 8*0);
+  topCall->position.address += 4;
   return value;
 }
 
-Furlang_Addr _furlang_executor_get_addr(Furlang_Context context, _Furlang_Executor *e) {
-  assert(context);
+Furlang_Addr _furlang_executor_get_addr(_Furlang_Executor *e, _Furlang_Module *module) {
   assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
   assert(e->callStack.count);
+  assert(module);
 
   _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
-  assert(topCall->position+8 <= context->bytecodeLength);
-  Furlang_Addr value = ((Furlang_Addr)context->bytecode[topCall->position+0] << 8*7) | ((Furlang_Addr)context->bytecode[topCall->position+1] << 8*6)
-                     | ((Furlang_Addr)context->bytecode[topCall->position+2] << 8*5) | ((Furlang_Addr)context->bytecode[topCall->position+3] << 8*4)
-                     | ((Furlang_Addr)context->bytecode[topCall->position+4] << 8*3) | ((Furlang_Addr)context->bytecode[topCall->position+5] << 8*2)
-                     | ((Furlang_Addr)context->bytecode[topCall->position+6] << 8*1) | ((Furlang_Addr)context->bytecode[topCall->position+7] << 8*0);
-  topCall->position += 8;
+  assert(topCall->position.address+8 <= module->bytecodeLength);
+  Furlang_Addr value = ((Furlang_Addr)module->bytecode[topCall->position.address+0] << 8*7) | ((Furlang_Addr)module->bytecode[topCall->position.address+1] << 8*6)
+                     | ((Furlang_Addr)module->bytecode[topCall->position.address+2] << 8*5) | ((Furlang_Addr)module->bytecode[topCall->position.address+3] << 8*4)
+                     | ((Furlang_Addr)module->bytecode[topCall->position.address+4] << 8*3) | ((Furlang_Addr)module->bytecode[topCall->position.address+5] << 8*2)
+                     | ((Furlang_Addr)module->bytecode[topCall->position.address+6] << 8*1) | ((Furlang_Addr)module->bytecode[topCall->position.address+7] << 8*0);
+  topCall->position.address += 8;
   return value;
 }
 
-uint16_t _furlang_executor_get_ushort(Furlang_Context context, _Furlang_Executor *e) {
-  assert(context);
+uint16_t _furlang_executor_get_ushort(_Furlang_Executor *e, _Furlang_Module *module) {
   assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
   assert(e->callStack.count);
+  assert(module);
 
   _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
-  assert(topCall->position+2 <= context->bytecodeLength);
-  uint16_t value = (context->bytecode[topCall->position+0] << 8) | (context->bytecode[topCall->position+1]);
-  topCall->position += 2;
+  assert(topCall->position.address+2 <= module->bytecodeLength);
+  uint16_t value = (module->bytecode[topCall->position.address+0] << 8) | (module->bytecode[topCall->position.address+1]);
+  topCall->position.address += 2;
   return value;
 }
 
-uint64_t _furlang_executor_get_ulong(Furlang_Context context, _Furlang_Executor *e) {
-  assert(context);
+uint64_t _furlang_executor_get_ulong(_Furlang_Executor *e, _Furlang_Module *module) {
   assert(e->flags & _FURLANG_EXECUTOR_FLAG_RUNNING);
   assert(e->callStack.count);
+  assert(module);
 
   _Furlang_Call *topCall = &e->callStack.items[e->callStack.count-1];
-  assert(topCall->position+8 <= context->bytecodeLength);
-  uint64_t value = ((uint64_t)context->bytecode[topCall->position+0] << 8*7) | ((uint64_t)context->bytecode[topCall->position+1] << 8*6)
-                 | ((uint64_t)context->bytecode[topCall->position+2] << 8*5) | ((uint64_t)context->bytecode[topCall->position+3] << 8*4)
-                 | ((uint64_t)context->bytecode[topCall->position+4] << 8*3) | ((uint64_t)context->bytecode[topCall->position+5] << 8*2)
-                 | ((uint64_t)context->bytecode[topCall->position+6] << 8*1) | ((uint64_t)context->bytecode[topCall->position+7] << 8*0);
-  topCall->position += 8;
+  assert(topCall->position.address+8 <= module->bytecodeLength);
+  uint64_t value = ((uint64_t)module->bytecode[topCall->position.address+0] << 8*7) | ((uint64_t)module->bytecode[topCall->position.address+1] << 8*6)
+                 | ((uint64_t)module->bytecode[topCall->position.address+2] << 8*5) | ((uint64_t)module->bytecode[topCall->position.address+3] << 8*4)
+                 | ((uint64_t)module->bytecode[topCall->position.address+4] << 8*3) | ((uint64_t)module->bytecode[topCall->position.address+5] << 8*2)
+                 | ((uint64_t)module->bytecode[topCall->position.address+6] << 8*1) | ((uint64_t)module->bytecode[topCall->position.address+7] << 8*0);
+  topCall->position.address += 8;
   return value;
 }
 

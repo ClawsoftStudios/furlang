@@ -354,21 +354,30 @@ Fbc furas_codegen(Furas_Tokens tokens, Furlang_Allocator *allocator) {
     }
   }
 
+  Fbc_Module module = {
+    .functionCount = context.functions.count,
+    .functions = furlang_allocator_alloc(allocator, sizeof(*module.functions) * context.functions.count)
+  };
+  assert(module.functions);
+
+  Fbc_Module *modules = furlang_allocator_alloc(allocator, sizeof(*modules) * 1);
+  assert(modules);
+
   Fbc fbc = {
-    .header = {
-      .functionCount = context.functions.count,
-      .functions = furlang_allocator_alloc(allocator, sizeof(*fbc.header.functions) * context.functions.count)
-    }
+    .moduleCount = 1,
+    .modules = modules
   };
 
-  assert(fbc.header.functions);
   for (size_t i = 0; i < context.functions.count; ++i) {
-    fbc.header.functions[i] = (Fbc_Header_Function){
+    module.functions[i] = (Fbc_Module_Function){
       .address = FURLANG_DA_AT(&context.functions, i).address,
       .paramCount = FURLANG_DA_AT(&context.functions, i).paramCount
     };
 
-    if (strcmp(FURLANG_DA_AT(&context.functions, i).name, "main") == 0) fbc.header.entryFunction = i;
+    if (strcmp(FURLANG_DA_AT(&context.functions, i).name, "main") == 0) {
+      fbc.header.entryFunction.module = 0;
+      fbc.header.entryFunction.function = i;
+    }
   }
 
   while (context.patches.count) {
@@ -394,10 +403,12 @@ Fbc furas_codegen(Furas_Tokens tokens, Furlang_Allocator *allocator) {
     FURLANG_DA_AT(&context.bytecode, patch.addr+7) = (label->address >> 8*0) & 0xFF;
   }
 
-  char *bytecode = furlang_allocator_alloc(allocator, (fbc.bytecodeLength = context.bytecode.count));
+  char *bytecode = furlang_allocator_alloc(allocator, (module.bytecodeLength = context.bytecode.count));
   assert(bytecode);
   memcpy(bytecode, context.bytecode.items, context.bytecode.count);
-  fbc.bytecode = bytecode;
+  module.bytecode = bytecode;
+
+  modules[0] = module;
 
   FURLANG_DA_FREE(&context.bytecode);
   FURLANG_DA_FREE(&context.functions);

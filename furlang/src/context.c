@@ -5,34 +5,22 @@
 #include <string.h>
 #include <assert.h>
 
-Furlang_Context furlang_context_create(Fbc fbc, Furlang_Allocator *allocator) {
-  assert(memcmp(fbc.header.magic, (uint8_t[])FBC_MAGIC, sizeof(fbc.header.magic)) == 0);
-
+Furlang_Context furlang_context_create(Furlang_Allocator *allocator) {
   Furlang_Context context = furlang_allocator_alloc(allocator, sizeof(*context));
   assert(context);
   memset(context, 0, sizeof(*context));
-
-  context->fbcHeader = fbc.header;
-  context->bytecodeLength = fbc.bytecodeLength;
-  context->bytecode = fbc.bytecode;
-
-  Fbc_Header_Function entryFunc = fbc.header.functions[fbc.header.entryFunction];
-  assert(entryFunc.paramCount == 0);
-  _furlang_context_append_executor(context, (Furlang_Position)entryFunc.address);
-
-  context->globalVariables.count = fbc.header.globalVariableCount;
-  if (context->globalVariables.count) {
-    context->globalVariables.items = malloc(sizeof(*context->globalVariables.items) * context->globalVariables.count);
-    assert(context->globalVariables.items);
-
-    for (uint16_t i = 0; i < context->globalVariables.count; ++i)
-      _furlang_context_store_global_var(context, i, furlang_thing_create(context, FURLANG_THING_TYPE_INT));
-  }
 
   return context;
 }
 
 void furlang_context_destroy(Furlang_Context context, Furlang_Allocator *allocator) {
+  for (size_t i = 0; i < context->modules.count; ++i) {
+    _Furlang_Module module = context->modules.items[i];
+    FURLANG_DA_FREE(&module.functions);
+    free(module.globalVariables.items);
+    free(module.bytecode);
+  }
+
   FURLANG_SPARSE_SET_FOREACH(&context->executors, Furlang_Executor, e) {
     _furlang_executor_cleanup(context, _furlang_context_get_executor(context, *e));
   }
@@ -137,17 +125,4 @@ void _furlang_context_remove_thing(Furlang_Context context, Furlang_Thing id) {
   _Furlang_Thing *thing = &FURLANG_SPARSE_SET_GET(&context->things, Furlang_Thing, id);
   FURLANG_DA_APPEND(&context->deadThings, ((_Furlang_Dead_Thing){ .type = thing->type, .id = id, .data = thing->data }));
   FURLANG_SPARSE_SET_REMOVE(&context->things, Furlang_Thing, id);
-}
-
-void _furlang_context_store_global_var(Furlang_Context context, uint16_t index, Furlang_Thing thing) {
-  assert(context);
-
-  if (FURLANG_DA_AT(&context->globalVariables, index) != _FURLANG_DEAD_THING) furlang_thing_unreference(context, FURLANG_DA_AT(&context->globalVariables, index));
-  FURLANG_DA_AT(&context->globalVariables, index) = thing;
-  furlang_thing_reference(context, thing);
-}
-
-Furlang_Thing _furlang_context_load_global_var(Furlang_Context context, uint16_t index) {
-  assert(context);
-  return FURLANG_DA_AT(&context->globalVariables, index);
 }

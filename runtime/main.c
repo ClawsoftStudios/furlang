@@ -10,7 +10,32 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  Furlang_Context context = furlang_context_create(furlang_read_fbc_from_file(argv[1], NULL), NULL);
+  Fbc fbc = furlang_read_fbc_from_file(argv[1], NULL);
+
+  Furlang_Context context = furlang_context_create(NULL);
+
+  for (size_t i = 0; i < fbc.moduleCount; ++i) {
+    Fbc_Module fbcModule = fbc.modules[i];
+
+    Furlang_Module_Function functions[fbcModule.functionCount] = {};
+    for (size_t j = 0; j < fbcModule.functionCount; ++j) {
+      functions[j] = (Furlang_Module_Function){
+        .address = fbcModule.functions[j].address,
+        .paramCount = fbcModule.functions[j].paramCount
+      };
+    }
+
+    (void)furlang_module_create(context, (Furlang_Module_Info){
+      .functionCount = fbcModule.functionCount,
+      .functions = functions,
+      .globalVariableCount = fbcModule.globalVariableCount,
+      .bytecodeLength = fbcModule.bytecodeLength,
+      .bytecode = fbcModule.bytecode
+    });
+  }
+
+  furlang_executor_create(context, fbc.header.entryFunction.module, fbc.header.entryFunction.function);
+
   furlang_context_run(context);
   furlang_context_destroy(context, NULL);
 

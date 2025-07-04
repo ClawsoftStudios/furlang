@@ -47,24 +47,32 @@ _Static_assert(COUNT_FURLANG_INSTRUCTIONS <= 0xFF, "Too many instructions!");
   (((Furlang_Addr)addr)>>(8*7)&0xFF), (((Furlang_Addr)addr)>>(8*6)&0xFF), (((Furlang_Addr)addr)>>(8*5)&0xFF), (((Furlang_Addr)addr)>>(8*4)&0xFF), \
   (((Furlang_Addr)addr)>>(8*3)&0xFF), (((Furlang_Addr)addr)>>(8*2)&0xFF), (((Furlang_Addr)addr)>>(8*1)&0xFF), (((Furlang_Addr)addr)>>(8*0)&0xFF)
 
-typedef struct Fbc_Header_Function {
+typedef struct Fbc_Module_Function {
   Furlang_Addr address;
-  size_t paramCount;
-} Fbc_Header_Function;
+  uint16_t paramCount;
+} Fbc_Module_Function;
+
+typedef struct Fbc_Module {
+  size_t functionCount;
+  Fbc_Module_Function *functions;
+  uint16_t globalVariableCount;
+  size_t bytecodeLength;
+  const char *bytecode;
+} Fbc_Module;
 
 typedef struct Fbc_Header {
   uint8_t magic[4];
   uint32_t version;
-  size_t entryFunction;
-  size_t functionCount;
-  Fbc_Header_Function *functions;
-  uint16_t globalVariableCount;
+  struct {
+    uint64_t module;
+    uint64_t function;
+  } entryFunction;
 } Fbc_Header;
 
 typedef struct Fbc {
   Fbc_Header header;
-  size_t bytecodeLength;
-  const char *bytecode;
+  size_t moduleCount;
+  const Fbc_Module *modules;
 } Fbc;
 
 #define FBC_MAGIC { 'F', 'b', 'c', 0x69 }
